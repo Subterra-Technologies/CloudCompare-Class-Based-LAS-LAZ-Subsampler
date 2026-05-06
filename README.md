@@ -1,4 +1,3 @@
-````md
 # CloudCompare LAS Class Subsampler
 
 A CloudCompare PythonRuntime script for class-based LiDAR point cloud cleanup.
@@ -9,67 +8,89 @@ It was built for utility and powerline LiDAR workflows where ground and vegetati
 
 ---
 
-## What It Does
+## Features
 
-Default behavior:
-
-- Subsamples **Class 2 — Ground**
-- Subsamples **Class 5 — High Vegetation**
-- Keeps all other classes at full density
-- Recolors:
-  - **Class 16 — Powerline** to red
-  - **Class 17 — Tower** to orange
-- Preserves scalar fields where supported by CloudCompare PythonRuntime
-- Creates a new merged cloud in the CloudCompare DB tree
-- Does **not** modify the original point cloud
+* Subsamples selected LAS classification classes
+* Keeps all other classes at full density
+* Optionally recolors selected classes
+* Preserves scalar fields where supported by CloudCompare PythonRuntime
+* Creates a new merged cloud inside CloudCompare
+* Does not modify the original cloud
+* Includes dry-run reporting
+* Includes safer defaults for large point clouds
 
 ---
 
-## Default Class Setup
+## Default Behavior
 
-The default script is configured around this classification scheme:
+By default, the script:
 
-| Class ID | Description |
-|---:|---|
-| 1 | Unclassified |
-| 2 | Ground |
-| 3 | Low Vegetation |
-| 5 | High Vegetation |
-| 6 | Building |
-| 9 | Water |
-| 16 | Powerline |
-| 17 | Tower |
-| 29 | Bridge |
+* Subsamples **Class 2 — Ground**
+* Subsamples **Class 5 — High Vegetation**
+* Keeps all other classes at full density
+* Recolors:
 
-You can change the class IDs in the `CONFIG` block near the top of the script.
+  * **Class 16 — Powerline** to red
+  * **Class 17 — Tower** to orange
+* Creates one final merged cloud named:
 
----
-
-## Default Processing
-
-```python
-"subsample_classes": {
-    2: 0.25,  # Ground
-    5: 0.25,  # High vegetation
-}
-````
-
-```python
-"rgb_overrides": {
-    16: (255, 0, 0),      # Powerline = red
-    17: (255, 165, 0),    # Tower = orange
-}
+```text
+MERGED_class_subsampled_rgb
 ```
+
+---
+
+## Default Classification Setup
+
+The default configuration is based on the following class IDs:
+
+| Class ID | Description       |
+| -------: | ----------------- |
+|        1 | Unclassified      |
+|        2 | Ground            |
+|        3 | Low Vegetation    |
+|        4 | Medium Vegetation |
+|        5 | High Vegetation   |
+|        6 | Building          |
+|        9 | Water             |
+|       16 | Powerline         |
+|       17 | Tower             |
+|       29 | Bridge            |
+
+These class labels are used for logging and reporting. You can change them in the `CONFIG` block.
+
+---
+
+## Requirements
+
+* CloudCompare
+* CloudCompare PythonRuntime plugin
+* NumPy available inside the CloudCompare PythonRuntime environment
+
+This script is intended to run inside CloudCompare, not from a normal terminal.
+
+---
+
+## Basic Usage
+
+1. Open your classified LAS/LAZ file in CloudCompare.
+2. Select the actual point cloud in the DB tree.
+
+   * Select the cloud object itself, not just the parent file or group.
+3. Open the PythonRuntime editor.
+4. Paste or load the script.
+5. Run it.
+6. Wait for the new merged cloud to appear in the DB tree.
+7. Review the output visually.
+8. Save or export the final merged cloud if needed.
 
 ---
 
 ## Important Unit Warning
 
-The subsampling spacing uses the point cloud’s coordinate units.
+The subsampling spacing uses the coordinate units of the point cloud.
 
-Examples:
-
-| Cloud coordinate units |        `0.25` means |
+| Cloud Coordinate Units |        `0.25` Means |
 | ---------------------- | ------------------: |
 | Meters                 |         0.25 meters |
 | Feet                   |           0.25 feet |
@@ -89,85 +110,13 @@ because:
 
 ---
 
-## Requirements
-
-* CloudCompare
-* CloudCompare PythonRuntime plugin
-* NumPy available inside the CloudCompare PythonRuntime environment
-
-This script is intended to run **inside CloudCompare**, not from a normal terminal.
-
----
-
-## Basic Usage
-
-1. Open your classified LAS/LAZ file in CloudCompare.
-2. Select the actual point cloud in the DB tree.
-
-   * Select the cloud object itself, not just a parent group.
-3. Open the PythonRuntime editor.
-4. Paste or load the script.
-5. Run it.
-6. Wait for the new merged cloud to appear in the DB tree.
-7. Review the output visually.
-8. Save/export the final merged cloud if needed.
-
-The final cloud name is controlled by:
-
-```python
-"final_cloud_name": "MERGED_class_subsampled_rgb"
-```
-
----
-
-## Recommended Workflow
-
-For large point clouds, keep this setting:
-
-```python
-"add_class_clouds_to_db": False
-```
-
-This creates only the final merged cloud.
-
-Do **not** set it to `True` unless you are working with a small test cloud. Creating per-class intermediate clouds can duplicate a large amount of data in memory and may crash CloudCompare.
-
----
-
-## Dry Run Mode
-
-To preview what the script will do without creating a new cloud, set:
-
-```python
-"dry_run_only": True
-```
-
-The script will print a class report showing:
-
-* Classes found
-* Point count per class
-* Which classes will be subsampled
-* Which classes will be recolored
-* Which classes will remain full density
-
-Example output:
-
-```text
-Class 2 (Ground): 18,923,551 points -> subsample spacing=0.25
-Class 5 (High Vegetation): 32,551,883 points -> subsample spacing=0.25
-Class 16 (Powerline): 45,992 points -> RGB override=(255, 0, 0)
-Class 17 (Tower): 12,401 points -> RGB override=(255, 165, 0)
-```
-
-Set it back to `False` to run the actual processing.
-
----
-
 ## Configuration
 
-All user-editable settings are located in the `CONFIG` block.
+All user-editable settings are located in the `CONFIG` block near the top of the script.
 
 ### Subsample Classes
+
+Default:
 
 ```python
 "subsample_classes": {
@@ -197,6 +146,8 @@ This would subsample ground, low vegetation, and high vegetation.
 ---
 
 ### RGB Overrides
+
+Default:
 
 ```python
 "rgb_overrides": {
@@ -232,6 +183,7 @@ Class labels are used for logging only.
     1: "Unclassified",
     2: "Ground",
     3: "Low Vegetation",
+    4: "Medium Vegetation",
     5: "High Vegetation",
     6: "Building",
     9: "Water",
@@ -245,45 +197,64 @@ Changing these labels does not change the actual classification values. It only 
 
 ---
 
-## Output
+### Final Cloud Name
 
-The script creates a new merged point cloud inside CloudCompare.
+Default:
 
-Default name:
-
-```text
-MERGED_class_subsampled_rgb
+```python
+"final_cloud_name": "MERGED_class_subsampled_rgb"
 ```
 
-The original cloud remains unchanged.
+This controls the name of the merged cloud created in the CloudCompare DB tree.
 
 ---
 
-## Memory Warning
+### Dry Run Mode
 
-Large LiDAR files can use a significant amount of RAM.
-
-The script has a warning threshold:
+To preview what the script will do without creating a new cloud, set:
 
 ```python
-"max_warn_points": 50_000_000
+"dry_run_only": True
 ```
 
-If the source cloud is larger than this, the script prints a warning.
+The script will print a class report showing:
 
-For large files:
+* Classes found
+* Point count per class
+* Which classes will be subsampled
+* Which classes will be recolored
+* Which classes will remain full density
+
+Example output:
+
+```text
+Class 2 (Ground): 18,923,551 points -> subsample spacing=0.25
+Class 5 (High Vegetation): 32,551,883 points -> subsample spacing=0.25
+Class 16 (Powerline): 45,992 points -> RGB override=(255, 0, 0)
+Class 17 (Tower): 12,401 points -> RGB override=(255, 165, 0)
+```
+
+Set it back to `False` to run the actual processing.
+
+---
+
+### Intermediate Class Clouds
+
+Default:
 
 ```python
 "add_class_clouds_to_db": False
 ```
 
-should stay disabled.
+Keep this set to `False` for large point clouds.
+
+If set to `True`, the script creates separate intermediate clouds for each class. This can be useful for testing, but it can duplicate a large amount of data in memory and may crash CloudCompare on large files.
 
 ---
 
-## Point Order
+### Preserve Original Point Order
 
-The script preserves original point order by default:
+Default:
 
 ```python
 "preserve_original_order": True
@@ -295,7 +266,19 @@ Usually this is the safest behavior.
 
 ---
 
-## How the Subsampling Works
+### Large Cloud Warning
+
+Default:
+
+```python
+"max_warn_points": 50_000_000
+```
+
+If the source cloud is larger than this number of points, the script prints a warning.
+
+---
+
+## How Subsampling Works
 
 The script uses a voxel/grid subsampling method.
 
@@ -310,11 +293,9 @@ Classes not listed in `subsample_classes` are kept at full density.
 
 ---
 
-## Example Use Cases
+## Example Configurations
 
 ### Utility / Powerline Dataset
-
-Recommended:
 
 ```python
 "subsample_classes": {
@@ -342,7 +323,7 @@ This reduces ground and high vegetation while keeping powerlines and towers full
 "rgb_overrides": {}
 ```
 
-This reduces terrain and vegetation for a lighter surface/context cloud.
+This reduces terrain and vegetation for a lighter surface or context cloud.
 
 ---
 
@@ -361,11 +342,39 @@ Buildings will remain unchanged.
 
 ---
 
+## Output
+
+The script creates a new merged point cloud inside CloudCompare.
+
+The original cloud remains unchanged.
+
+Default output cloud name:
+
+```text
+MERGED_class_subsampled_rgb
+```
+
+---
+
+## Recommended Workflow
+
+For large point clouds:
+
+1. Keep `add_class_clouds_to_db` set to `False`.
+2. Run a dry run first.
+3. Confirm the class counts and planned actions.
+4. Set `dry_run_only` to `False`.
+5. Run the script.
+6. Review the merged cloud.
+7. Save or export the final cloud.
+
+---
+
 ## Troubleshooting
 
 ### Script says no point cloud is selected
 
-Make sure you selected the actual point cloud object in the DB tree, not just a parent group or file container.
+Make sure you selected the actual point cloud object in the DB tree, not just the parent group or file container.
 
 Typical structure:
 
@@ -423,7 +432,24 @@ Then lower it once the workflow is confirmed.
 
 Try displaying by scalar field or RGB in CloudCompare’s properties panel.
 
-The script attempts to create RGB colors, but CloudCompare display/export behavior can vary by version.
+CloudCompare display and export behavior can vary by version.
+
+---
+
+### Output looks correct in CloudCompare but not after export
+
+CloudCompare’s in-memory object model and LAS/LAZ export behavior are not always identical.
+
+Before delivery, always reopen the exported file and verify:
+
+* Point count
+* Classification field
+* RGB/colors
+* Coordinate location
+* Global shift/scale
+* Bounding box
+
+For production batch workflows, a standalone `laspy` or `PDAL` version may be more reliable.
 
 ---
 
@@ -432,33 +458,16 @@ The script attempts to create RGB colors, but CloudCompare display/export behavi
 * This script depends on CloudCompare PythonRuntime behavior, which may vary by CloudCompare version.
 * It is designed for interactive CloudCompare use, not batch processing.
 * Very large clouds may require significant RAM.
-* The script creates a new in-memory CloudCompare cloud; it does not directly write LAS/LAZ from Python.
+* The script creates a new in-memory CloudCompare cloud.
+* The script does not directly write LAS/LAZ from Python.
 * CloudCompare export behavior can vary depending on file type, scalar field naming, and version.
 
-For batch processing or production deliverables, a standalone `laspy` or `PDAL` version may be more reliable.
-
----
-
-## Recommended Repository Structure
-
-```text
-cloudcompare-las-class-subsampler/
-├── README.md
-├── cloudcompare_class_subsample.py
-├── LICENSE
-└── examples/
-    └── utility_config.md
-```
 
 ---
 
 ## License
 
-Recommended license:
-
-```text
-MIT License
-```
+MIT License is recommended.
 
 This allows others to use, modify, and share the script freely.
 
@@ -479,6 +488,3 @@ Recommended checks:
 * Critical classes such as powerlines, towers, buildings, and utilities
 
 This script is provided as a practical utility and should be validated against your own data before production use.
-
-```
-```
