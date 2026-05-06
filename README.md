@@ -467,10 +467,7 @@ For production batch workflows, a standalone `laspy` or `PDAL` version may be mo
 
 ## License
 
-MIT License is recommended.
-
-This allows others to use, modify, and share the script freely.
-
+MIT License
 ---
 
 ## Disclaimer
